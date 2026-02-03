@@ -1,6 +1,6 @@
 const { Model } = require('objection');
 const Knex = require('knex');
-const { development } = require('../../knexfile')
+const { development } = require('../knexfile')
 
 // Initialize knex.
 const knex = Knex(development);

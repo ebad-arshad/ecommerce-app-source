@@ -1,20 +1,27 @@
-# Use an official Node.js runtime as a parent image
-FROM node:16.13-alpine
+# Stage 1
+FROM node:20-alpine AS builder
 
-# Set the working directory to /app
 WORKDIR /app
 
-# Install curl for testing APIs
-RUN apk add --no-cache curl
-
-# Copy package.json and package-lock.json to the container
 COPY package*.json ./
 
-# Install app dependencies
-RUN npm ci
+RUN npm ci --omit=dev
 
-# Copy the rest of the application files to the container
 COPY . .
 
-# Set the command to start the app
-CMD [ "npm", "start" ]
+# ---------------------------------------------------------
+
+# Stage 2
+FROM gcr.io/distroless/nodejs20-debian12
+WORKDIR /app
+
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/src ./src
+COPY --from=builder /app/index.js ./index.js
+COPY --from=builder /app/package.json ./package.json
+
+# Using the built-in non-privileged user for security
+EXPOSE 5002
+USER nonroot
+
+CMD ["index.js"]

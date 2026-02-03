@@ -38,6 +38,7 @@ services:
   auth:
     build: ./auth
     container_name: auth
+    image: auth
     environment:
       POSTGRES_HOST: auth-db
       POSTGRES_USER: user
@@ -65,6 +66,7 @@ services:
   product:
     build: ./product
     container_name: product
+    image: product
     environment:
       POSTGRES_HOST: product-db
       POSTGRES_USER: user
@@ -97,6 +99,7 @@ services:
   order:
     build: ./order
     container_name: order
+    image: order
     environment:
       POSTGRES_HOST: order-db
       POSTGRES_USER: user
@@ -117,6 +120,7 @@ services:
 
   api-gateway:
     build: ./api-gateway
+    image: api-gateway
     ports:
       - "5000:5000"
     container_name: api-gateway

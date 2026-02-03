@@ -2,6 +2,8 @@ const express = require("express");
 const config = require("./config");
 const morgan = require('morgan');
 const AuthController = require("./controllers/authController");
+const { knex } = require('./models/model');
+
 
 class App {
     constructor() {
@@ -11,8 +13,24 @@ class App {
         this.setRoutes();
     }
 
-    start() {
-        this.server = this.app.listen(config.port, () => console.log(`Auth server listening on port ${config.port}`));
+    async start() {
+        try {
+            console.log("Checking database and running migrations...");
+            
+            // Run the migrations programmatically
+            await knex.migrate.latest();
+            
+            console.log("Database is up to date ✅");
+
+            // Start listening ONLY after migration succeeds
+            this.server = this.app.listen(config.port, () => {
+                console.log(`Auth server listening on port ${config.port} 🚀`);
+            });
+        } catch (error) {
+            console.error("FATAL: Database migration failed ❌");
+            console.error(error);
+            process.exit(1);
+        }
     }
 
     setMiddlewares() {

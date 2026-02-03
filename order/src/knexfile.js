@@ -1,4 +1,5 @@
-const config = require("./src/config");
+const config = require("./config");
+const path = require('path');
 
 /**
  * @type { Object.<string, import("knex").Knex.Config> }
@@ -17,7 +18,8 @@ module.exports = {
       idleTimeoutMillis: 3000,
     },
     migrations: {
-      tableName: 'knex_migrations'
+      tableName: 'knex_migrations',
+      directory: path.join(__dirname, 'migrations')
     }
   },
 };
