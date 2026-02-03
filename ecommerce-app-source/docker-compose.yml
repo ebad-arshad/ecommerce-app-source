@@ -1,0 +1,145 @@
+x-postgres-common: &postgres-common
+  image: postgres:alpine3.19
+  user: postgres
+  restart: always
+  healthcheck:
+    test: "pg_isready -U user --dbname=postgres"
+    interval: 10s
+    timeout: 5s
+    retries: 5
+
+services:
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    container_name: rabbitmq
+    networks:
+      - ecommerce
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq/
+      - rabbitmq_log:/var/log/rabbitmq
+    healthcheck:
+      test: rabbitmq-diagnostics check_port_connectivity
+      interval: 20s
+      timeout: 10s
+      retries: 5
+
+  auth-db:
+    <<: *postgres-common
+    container_name: auth-db
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: auth
+    networks:
+      - auth
+    volumes:
+      - auth-db:/data/postgres
+
+  auth:
+    build: ./auth
+    container_name: auth
+    environment:
+      POSTGRES_HOST: auth-db
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: auth
+    networks:
+      - ecommerce
+      - auth
+    depends_on:
+      auth-db:
+        condition: service_healthy
+
+  product-db:
+    <<: *postgres-common
+    container_name: product-db
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: product
+    networks:
+      - product
+    volumes:
+      - product-db:/data/postgres
+
+  product:
+    build: ./product
+    container_name: product
+    environment:
+      POSTGRES_HOST: product-db
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: product
+      RABBITMQ_URL: amqp://rabbitmq:5672
+      RABBITMQ_PRODUCT_QUEUE: product
+      RABBITMQ_ORDER_QUEUE: order
+    networks:
+      - ecommerce
+      - product
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      product-db:
+        condition: service_healthy
+
+  order-db:
+    <<: *postgres-common
+    container_name: order-db
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: order
+    networks:
+      - order
+    volumes:
+      - order-db:/data/postgres
+
+  order:
+    build: ./order
+    container_name: order
+    environment:
+      POSTGRES_HOST: order-db
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: order
+      PRODUCT_URL: http://product:5002
+      RABBITMQ_URL: amqp://rabbitmq:5672
+      RABBITMQ_PRODUCT_QUEUE: product
+      RABBITMQ_ORDER_QUEUE: order
+    networks:
+      - ecommerce
+      - order
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      order-db:
+        condition: service_healthy
+
+  api-gateway:
+    build: ./api-gateway
+    ports:
+      - "5000:5000"
+    container_name: api-gateway
+    environment:
+      AUTH_URL: http://auth:5001
+      PRODUCT_URL: http://product:5002
+      ORDER_URL: http://order:5003
+    networks:
+      - ecommerce
+    depends_on:
+      - auth
+      - product
+      - order
+
+volumes:
+  auth-db:
+  product-db:
+  order-db:
+  rabbitmq_data:
+  rabbitmq_log:
+
+networks:
+  auth:
+  product:
+  order:
+  ecommerce:
