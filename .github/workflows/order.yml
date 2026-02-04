@@ -1,0 +1,37 @@
+# Checkout: Get the code onto the runner.
+# FS Scan (SAST): Scan the source code for vulnerabilities (Snyk/Trivy).
+# Secret Scan: Ensure no passwords were accidentally committed.
+# Build Image: Create that Distroless image.
+# Image Scan: Scan the built image for OS-level vulnerabilities (Trivy).
+# Docker Hub Push: Send the clean, verified image to the registry.
+
+name: Order CI
+
+on:   
+  push:
+    paths:
+      - 'order/**'
+      - '.github/workflows/order.yml'
+jobs:
+  build-and-scan:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./order
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          path: '.'
+          sparse-checkout: |
+            order
+          sparse-checkout-cone-mode: false 
+  
+      - name: Run Trivy FS Scan
+        uses: aquasecurity/trivy-action@0.33.1
+        with:
+          scan-type: 'fs'
+          scan-ref: '.'
+          format: 'table'
+          severity: 'CRITICAL,HIGH'
+          exit-code: '1'
