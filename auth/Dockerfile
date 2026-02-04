@@ -24,5 +24,4 @@ COPY --from=builder /app/package.json ./package.json
 EXPOSE 5001
 USER nonroot
 
-# Start the app directly. Note: No "npm start" here!
 CMD ["index.js"]

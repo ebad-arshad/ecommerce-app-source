@@ -25,5 +25,4 @@ COPY --from=builder /app/middlewares ./middlewares
 EXPOSE 5000
 USER nonroot
 
-# Start the app directly. Note: No "npm start" here!
 CMD ["index.js"]
