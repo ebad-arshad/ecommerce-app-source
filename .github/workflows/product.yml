@@ -41,19 +41,21 @@ jobs:
         with:
           username: ${{ vars.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
-
+          
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
       - name: Build Docker Image
         uses: docker/build-push-action@v6
         with:
           context: '${{env.SERVICE_NAME}}'
           push: false
           load: true
-          tags: ${{vars.DOCKERHUB_USERNAME}}/prod-${{env.SERVICE_NAME}}:v${{ github.run_number }}
+          tags: ${{vars.DOCKERHUB_USERNAME}}/prod-${{env.SERVICE_NAME}}:${{ vars.PRODUCT_VERSION }}
       
       - name: Scan Image with Trivy
         uses: aquasecurity/trivy-action@0.33.1
         with:
-          image-ref: '${{ vars.DOCKERHUB_USERNAME }}/prod-${{ env.SERVICE_NAME }}:v${{ github.run_number }}'
+          image-ref: '${{ vars.DOCKERHUB_USERNAME }}/prod-${{ env.SERVICE_NAME }}:${{ vars.PRODUCT_VERSION }}'
           format: 'table'
           severity: 'HIGH,CRITICAL'
           ignore-unfixed: true
@@ -61,4 +63,4 @@ jobs:
           exit-code: '1'
 
       - name: Push to Docker Hub
-        run: docker push ${{ vars.DOCKERHUB_USERNAME }}/prod-${{ env.SERVICE_NAME }}:v${{ github.run_number }}
+        run: docker push ${{ vars.DOCKERHUB_USERNAME }}/prod-${{ env.SERVICE_NAME }}:${{ vars.PRODUCT_VERSION }}
