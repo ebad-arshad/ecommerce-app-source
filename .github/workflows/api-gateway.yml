@@ -1,10 +1,3 @@
-# Checkout: Get the code onto the runner.
-# FS Scan (SAST): Scan the source code for vulnerabilities (Snyk/Trivy).
-# Secret Scan: Ensure no passwords were accidentally committed.
-# Build Image: Create that Distroless image.
-# Image Scan: Scan the built image for OS-level vulnerabilities (Trivy).
-# Docker Hub Push: Send the clean, verified image to the registry.
-
 name: Api Gateway CI
 
 on:   
@@ -13,25 +6,27 @@ on:
       - 'api-gateway/**'
       - '.github/workflows/api-gateway.yml'
 jobs:
-  build-and-scan:
+  scan-and-build:
     runs-on: ubuntu-latest
+    env:
+      SERVICE_NAME: api-gateway
     defaults:
       run:
-        working-directory: ./api-gateway
+        working-directory: ./${{env.SERVICE_NAME}}
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
           sparse-checkout: |
-            api-gateway
+            ${{env.SERVICE_NAME}}
           sparse-checkout-cone-mode: false 
   
-      - name: Run Trivy FS Scan
+      - name: Run Trivy FS Scan (SAST)
         uses: aquasecurity/trivy-action@0.33.1
         with:
           scan-type: 'fs'
-          scan-ref: 'api-gateway'
+          scan-ref: '${{env.SERVICE_NAME}}'
           format: 'table'
           severity: 'CRITICAL,HIGH'
           exit-code: '1'
@@ -40,3 +35,28 @@ jobs:
         uses: gitleaks/gitleaks-action@v2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ vars.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build Docker Image
+        uses: docker/build-push-action@v6
+        with:
+          context: '${{env.SERVICE_NAME}}'
+          push: false
+          load: true
+          tags: ${{vars.DOCKERHUB_USERNAME}}/prod-${{env.SERVICE_NAME}}:v${{ github.run_number }}
+      
+      - name: Scan Image with Trivy
+        uses: aquasecurity/trivy-action@0.33.1
+        with:
+          image-ref: '${{ vars.DOCKERHUB_USERNAME }}/prod-${{ env.SERVICE_NAME }}:v${{ github.run_number }}'
+          format: 'table'
+          severity: 'CRITICAL,HIGH'
+          exit-code: '1'
+
+      - name: Push to Docker Hub
+        run: docker push ${{ vars.DOCKERHUB_USERNAME }}/prod-${{ env.SERVICE_NAME }}:v${{ github.run_number }}
