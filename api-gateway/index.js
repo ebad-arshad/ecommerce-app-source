@@ -6,7 +6,7 @@ const roleMiddleware = require("./middlewares/roleMiddleware");
 const morgan = require('morgan');
 const proxy = httpProxy.createProxyServer();
 const app = express();
-const API_TOKEN="AKIAIMNO86ABCDE7FFGH"
+const API_TOKEN="sadawdadwa"
 
 // Pass user info to services
 proxy.on('proxyReq', function (proxyReq, req, _res, _options) {
