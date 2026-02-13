@@ -87,5 +87,4 @@ jobs:
           git config user.email "actions@github.com"
           git config user.name "GitHub Actions"
           git add ${{ env.SERVICE_NAME }}-values.yaml
-          git commit -m "chore: update ${{ env.SERVICE_NAME }} to ${{ env.VERSION }}"
-          git push
+          git diff --quiet && git diff --staged --quiet || (git commit -m "chore: update ${{ env.SERVICE_NAME }} to ${{ env.VERSION }}" && git push)
