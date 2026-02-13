@@ -8,7 +8,7 @@ on:
 
 env:
   SERVICE_NAME: auth
-  IMAGE_TAG: ${{ vars.DOCKERHUB_USERNAME }}/prod-auth:${{ vars.API_GATEWAY_VERSION }}
+  IMAGE_TAG: ${{ vars.DOCKERHUB_USERNAME }}/prod-auth:${{ vars.AUTH_VERSION }}
   VERSION: ${{ vars.AUTH_VERSION }}
 jobs:
   scan-and-build:
