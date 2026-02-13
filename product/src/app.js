@@ -71,7 +71,8 @@ class App {
                 status: 'OK',
                 service: 'product-service',
                 uptime: process.uptime(),
-                timestamp: Date.now()
+                timestamp: Date.now(),
+                created_by: 'Ebad'
             });
         });
         this.app.get("/view", (req, res) => this.productController.getProducts(req, res));

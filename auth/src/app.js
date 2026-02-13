@@ -42,7 +42,8 @@ class App {
                 status: tokens.status(req, res),
                 responseTime: tokens.res(req, res, 'content-length'),
                 time: tokens['response-time'](req, res) + 'ms',
-                service: "auth-service"
+                service: "auth-service",
+                created_by: 'Ebad'
             });
         }));
     }
@@ -56,7 +57,8 @@ class App {
                 status: 'OK',
                 service: 'auth-service',
                 uptime: process.uptime(),
-                timestamp: Date.now()
+                timestamp: Date.now(),
+                created_by: 'Ebad'
             });
         });
         this.app.post("/login", (req, res) => this.authController.login(req, res));

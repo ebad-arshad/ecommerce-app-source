@@ -35,7 +35,8 @@ app.get('/apis/healthz', (req, res) => {
     message: 'OK',
     uptime: process.uptime(),
     timestamp: Date.now(),
-    service: 'api-gateway-service'
+    service: 'api-gateway-service',
+    created_by: 'Ebad'
   };
   try {
     res.status(200).send(healthcheck);
