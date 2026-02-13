@@ -43,7 +43,6 @@ class App {
                 responseTime: tokens.res(req, res, 'content-length'),
                 time: tokens['response-time'](req, res) + 'ms',
                 service: "auth-service",
-                created_by: 'Ebad'
             });
         }));
     }
@@ -58,7 +57,7 @@ class App {
                 service: 'auth-service',
                 uptime: process.uptime(),
                 timestamp: Date.now(),
-                created_by: 'Ebad'
+                created_by: 'M.Ebad Arshad'
             });
         });
         this.app.post("/login", (req, res) => this.authController.login(req, res));

@@ -59,7 +59,6 @@ class App {
                 responseTime: tokens.res(req, res, 'content-length'),
                 time: tokens['response-time'](req, res) + 'ms',
                 service: "order-service",
-                created_by: 'Ebad'
             });
         }));
     }
@@ -74,7 +73,7 @@ class App {
                 service: 'order-service',
                 uptime: process.uptime(),
                 timestamp: Date.now(),
-                created_by: 'Ebad'
+                created_by: 'M.Ebad Arshad'
             });
         });
         

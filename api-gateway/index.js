@@ -36,7 +36,7 @@ app.get('/apis/healthz', (req, res) => {
     uptime: process.uptime(),
     timestamp: Date.now(),
     service: 'api-gateway-service',
-    created_by: 'Ebad'
+    created_by: 'M.Ebad Arshad'
   };
   try {
     res.status(200).send(healthcheck);

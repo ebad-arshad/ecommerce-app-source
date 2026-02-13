@@ -72,7 +72,7 @@ class App {
                 service: 'product-service',
                 uptime: process.uptime(),
                 timestamp: Date.now(),
-                created_by: 'Ebad'
+                created_by: 'M.Ebad Arshad'
             });
         });
         this.app.get("/view", (req, res) => this.productController.getProducts(req, res));
