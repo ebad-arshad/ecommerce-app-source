@@ -72,14 +72,12 @@ jobs:
           repository: 'ebad-arshad/ecommerce-gitops-manifests'
           token: ${{ secrets.ACTIONS_PAT }}
           path: './gitops'
-      - name: Change image version in manifest
-        working-directory: ./gitops/helm/environments/dev
+          sparse-checkout: |
+            helm/environments/dev/
+      - name: Update Image Tag
         run: | 
+          cd gitops/helm/environments/dev
           yq -i '.image.name = "${{ vars.DOCKERHUB_USERNAME }}/prod-${{ env.SERVICE_NAME }}:${{ vars.API_GATEWAY_VERSION }}"' ${{ env.SERVICE_NAME }}-values.yaml
-
-      - name: Git push
-        working-directory: ./gitops/helm/environments/dev
-        run: | 
           git config user.email "actions@github.com"
           git config user.name "GitHub Actions"
           git add ${{ env.SERVICE_NAME }}-values.yaml
