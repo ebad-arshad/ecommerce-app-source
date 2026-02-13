@@ -3,8 +3,8 @@ name: Order CI
 on:   
   push:
     paths:
-      - 'Order/**'
-      - '.github/workflows/Order.yml'
+      - 'order/**'
+      - '.github/workflows/order.yml'
 
 env:
   SERVICE_NAME: order
