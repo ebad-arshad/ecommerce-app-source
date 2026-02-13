@@ -5,11 +5,14 @@ on:
     paths:
       - 'product/**'
       - '.github/workflows/product.yml'
+
+env:
+  SERVICE_NAME: product
+  IMAGE_TAG: ${{ vars.DOCKERHUB_USERNAME }}/prod-product:${{ vars.API_GATEWAY_VERSION }}
+  VERSION: ${{ vars.PRODUCT_VERSION }}
 jobs:
   scan-and-build:
     runs-on: ubuntu-latest
-    env:
-      SERVICE_NAME: product
     defaults:
       run:
         working-directory: ./${{env.SERVICE_NAME}}
@@ -50,12 +53,12 @@ jobs:
           context: '${{env.SERVICE_NAME}}'
           push: false
           load: true
-          tags: ${{vars.DOCKERHUB_USERNAME}}/prod-${{env.SERVICE_NAME}}:${{ vars.PRODUCT_VERSION }}
+          tags: ${{ env.IMAGE_TAG }}
       
       - name: Scan Image with Trivy
         uses: aquasecurity/trivy-action@0.33.1
         with:
-          image-ref: '${{ vars.DOCKERHUB_USERNAME }}/prod-${{ env.SERVICE_NAME }}:${{ vars.PRODUCT_VERSION }}'
+          image-ref: '${{ env.IMAGE_TAG }}'
           format: 'table'
           severity: 'HIGH,CRITICAL'
           ignore-unfixed: true
@@ -63,4 +66,26 @@ jobs:
           exit-code: '1'
 
       - name: Push to Docker Hub
-        run: docker push ${{ vars.DOCKERHUB_USERNAME }}/prod-${{ env.SERVICE_NAME }}:${{ vars.PRODUCT_VERSION }}
+        run: docker push ${{ env.IMAGE_TAG }}
+
+  update-k8s-manifest:
+    needs: scan-and-build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout ecommerce-gitops-manifests repository
+        uses: actions/checkout@v4
+        with:
+          repository: 'ebad-arshad/ecommerce-gitops-manifests'
+          token: ${{ secrets.ACTIONS_PAT }}
+          path: './gitops'
+          sparse-checkout: |
+            helm/environments/dev/
+      - name: Update Image Tag
+        run: | 
+          cd gitops/helm/environments/dev
+          yq -i '.image.name = "${{ env.IMAGE_TAG }}"' ${{ env.SERVICE_NAME }}-values.yaml
+          git config user.email "actions@github.com"
+          git config user.name "GitHub Actions"
+          git add ${{ env.SERVICE_NAME }}-values.yaml
+          git commit -m "chore: update ${{ env.SERVICE_NAME }} to ${{ env.VERSION }}"
+          git push

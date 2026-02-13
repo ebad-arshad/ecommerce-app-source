@@ -5,18 +5,26 @@ on:
     paths:
       - 'api-gateway/**'
       - '.github/workflows/api-gateway.yml'
+
+env:
+  SERVICE_NAME: api-gateway
+  IMAGE_TAG: ${{ vars.DOCKERHUB_USERNAME }}/prod-api-gateway:${{ vars.API_GATEWAY_VERSION }}
+  VERSION: ${{ vars.API_GATEWAY_VERSION }}
 jobs:
   scan-and-build:
     runs-on: ubuntu-latest
-    env:
-      SERVICE_NAME: api-gateway
     defaults:
       run:
         working-directory: ./${{env.SERVICE_NAME}}
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
-
+        with:
+          fetch-depth: 0
+          sparse-checkout: |
+            ${{env.SERVICE_NAME}}
+          sparse-checkout-cone-mode: false 
+  
       - name: Run Trivy FS Scan (SAST)
         uses: aquasecurity/trivy-action@0.33.1
         with:
@@ -45,12 +53,12 @@ jobs:
           context: '${{env.SERVICE_NAME}}'
           push: false
           load: true
-          tags: ${{vars.DOCKERHUB_USERNAME}}/prod-${{env.SERVICE_NAME}}:${{ vars.API_GATEWAY_VERSION }}
+          tags: ${{ env.IMAGE_TAG }}
       
       - name: Scan Image with Trivy
         uses: aquasecurity/trivy-action@0.33.1
         with:
-          image-ref: '${{ vars.DOCKERHUB_USERNAME }}/prod-${{ env.SERVICE_NAME }}:${{ vars.API_GATEWAY_VERSION }}'
+          image-ref: '${{ env.IMAGE_TAG }}'
           format: 'table'
           severity: 'HIGH,CRITICAL'
           ignore-unfixed: true
@@ -58,13 +66,11 @@ jobs:
           exit-code: '1'
 
       - name: Push to Docker Hub
-        run: docker push ${{ vars.DOCKERHUB_USERNAME }}/prod-${{ env.SERVICE_NAME }}:${{ vars.API_GATEWAY_VERSION }}
+        run: docker push ${{ env.IMAGE_TAG }}
 
   update-k8s-manifest:
     needs: scan-and-build
     runs-on: ubuntu-latest
-    env:
-      SERVICE_NAME: api-gateway
     steps:
       - name: Checkout ecommerce-gitops-manifests repository
         uses: actions/checkout@v4
@@ -77,9 +83,9 @@ jobs:
       - name: Update Image Tag
         run: | 
           cd gitops/helm/environments/dev
-          yq -i '.image.name = "${{ vars.DOCKERHUB_USERNAME }}/prod-${{ env.SERVICE_NAME }}:${{ vars.API_GATEWAY_VERSION }}"' ${{ env.SERVICE_NAME }}-values.yaml
+          yq -i '.image.name = "${{ env.IMAGE_TAG }}"' ${{ env.SERVICE_NAME }}-values.yaml
           git config user.email "actions@github.com"
           git config user.name "GitHub Actions"
           git add ${{ env.SERVICE_NAME }}-values.yaml
-          git commit -m "chore: update ${{ env.SERVICE_NAME }} to ${{ vars.API_GATEWAY_VERSION }}"
+          git commit -m "chore: update ${{ env.SERVICE_NAME }} to ${{ env.VERSION }}"
           git push
