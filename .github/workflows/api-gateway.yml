@@ -16,12 +16,7 @@ jobs:
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-          sparse-checkout: |
-            ${{env.SERVICE_NAME}}
-          sparse-checkout-cone-mode: false 
-  
+
       - name: Run Trivy FS Scan (SAST)
         uses: aquasecurity/trivy-action@0.33.1
         with:
@@ -64,3 +59,29 @@ jobs:
 
       - name: Push to Docker Hub
         run: docker push ${{ vars.DOCKERHUB_USERNAME }}/prod-${{ env.SERVICE_NAME }}:${{ vars.API_GATEWAY_VERSION }}
+
+  update-k8s-manifest:
+    needs: scan-and-build
+    runs-on: ubuntu-latest
+    env:
+      SERVICE_NAME: api-gateway
+    steps:
+      - name: Checkout ecommerce-gitops-manifests repository
+        uses: actions/checkout@v4
+        with:
+          repository: 'ebad-arshad/ecommerce-gitops-manifests'
+          token: ${{ secrets.ACTIONS_PAT }}
+          path: './gitops'
+      - name: Change image version in manifest
+        working-directory: ./gitops/helm/environments/dev
+        run: | 
+          yq -i '.image.name = "${{ vars.DOCKERHUB_USERNAME }}/prod-${{ env.SERVICE_NAME }}:${{ vars.API_GATEWAY_VERSION }}"' ${{ env.SERVICE_NAME }}-values.yaml
+
+      - name: Git push
+        working-directory: ./gitops/helm/environments/dev
+        run: | 
+          git config user.email "actions@github.com"
+          git config user.name "GitHub Actions"
+          git add ${{ env.SERVICE_NAME }}-values.yaml
+          git commit -m "chore: update ${{ env.SERVICE_NAME }} to ${{ vars.API_GATEWAY_VERSION }}"
+          git push
